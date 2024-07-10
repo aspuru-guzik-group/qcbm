@@ -3,6 +3,7 @@ from qiskit import transpile
 import numpy as np
 import json
 from tqdm import tqdm
+import torch
 
 class SingleBasisQCBM:
     def __init__(self, ansatz, optimizer, distance_measure=None, choices=(-1.0, 1.0), param_initializer=None):
@@ -41,7 +42,26 @@ class SingleBasisQCBM:
             result = job.result()
             quasi_dist = result.quasi_dists[0]
             counts = quasi_dist.binary_probabilities()
-            samples = np.array([list(map(int, k)) for k, v in counts.items() for _ in range(int(v * n_samples))])
+            
+            # Convert probabilities to a list of samples
+            samples_list = [list(map(int, k)) for k, v in counts.items() for _ in range(int(v * n_samples))]
+            
+            # Calculate the number of missing samples
+            num_missing_samples = n_samples - len(samples_list)
+            
+            # If we have fewer samples than needed, we need to resample
+            if num_missing_samples > 0:
+                # Get additional samples based on the probabilities
+                additional_samples = np.random.choice(
+                    list(counts.keys()),
+                    size=num_missing_samples,
+                    p=list(counts.values())
+                )
+                additional_samples = [list(map(int, sample)) for sample in additional_samples]
+                samples_list.extend(additional_samples)
+            
+            # Convert list of samples to a numpy array
+            samples = np.array(samples_list[:n_samples])
             return samples
         return generator
 
@@ -71,7 +91,7 @@ class SingleBasisQCBM:
         samples = generator(num_samples, self.params)
         unique_samples, counts = np.unique(samples, axis=0, return_counts=True)
         probabilities = counts / num_samples
-        return unique_samples, probabilities
+        return torch.Tensor(samples)
 
     def save_params(self, filename):
         with open(filename, 'w') as f:
