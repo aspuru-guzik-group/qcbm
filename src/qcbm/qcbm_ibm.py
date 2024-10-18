@@ -15,7 +15,7 @@ class SingleBasisQCBM:
         self.params = self._get_initial_parameters(param_initializer)
 
     def _default_distance_measure(self, target_probs, model_probs):
-        epsilon = 1e-10
+        epsilon = 1e-2
         return np.sum(target_probs * np.log(target_probs / (model_probs + epsilon) + epsilon))
 
     def _get_initial_parameters(self, initializer):
@@ -28,8 +28,8 @@ class SingleBasisQCBM:
         qc_transpiled = transpile(qc, backend)
         job = sampler.run([qc_transpiled])
         result = job.result()
-        quasi_dist = result.quasi_dists[0]
-        counts = quasi_dist.binary_probabilities()
+        quasi_dist = result[0].data
+        counts = quasi_dist.meas.get_counts()
         shots = sum(counts.values())
         probs = np.array([counts.get(f"{i:0{self.num_qubits}b}", 0) / shots for i in range(2**self.num_qubits)])
         return probs
@@ -40,8 +40,8 @@ class SingleBasisQCBM:
             qc_transpiled = transpile(qc, backend)
             job = sampler.run([qc_transpiled])
             result = job.result()
-            quasi_dist = result.quasi_dists[0]
-            counts = quasi_dist.binary_probabilities()
+            quasi_dist = result[0].data
+            counts = quasi_dist.meas.get_counts()
             
             # Convert probabilities to a list of samples
             samples_list = [list(map(int, k)) for k, v in counts.items() for _ in range(int(v * n_samples))]
@@ -91,7 +91,7 @@ class SingleBasisQCBM:
         samples = generator(num_samples, self.params)
         unique_samples, counts = np.unique(samples, axis=0, return_counts=True)
         probabilities = counts / num_samples
-        return torch.Tensor(samples)
+        return torch.Tensor(samples),unique_samples,probabilities
 
     def save_params(self, filename):
         with open(filename, 'w') as f:

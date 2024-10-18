@@ -9,6 +9,7 @@ from qcbm.qcbm_ibm import SingleBasisQCBM
 from qcbm.loss import ExactNLLTorch
 from qcbm.optimizer import ScipyOptimizer
 from qiskit_ibm_runtime import QiskitRuntimeService, Session, SamplerV2 as Sampler,  Batch
+from qiskit.providers.fake_provider import GenericBackendV2
 import numpy as np
 from itertools import combinations
 import random
@@ -37,9 +38,9 @@ def generate_data(num_qubits, cardinality, num_samples):
     
     return np.array(X), Y
 
-num_qubits = 10
-cardinality = 5
-num_samples = 500
+num_qubits = 5
+cardinality = 2
+num_samples = 10
 
 X, Y = generate_data(num_qubits, cardinality, num_samples)
 
@@ -52,7 +53,7 @@ print("Example Y:", Y[:5])
 # Initialize Qiskit Runtime Service with specific credentials
 service = QiskitRuntimeService(name="ibm_uoft")
 backend = service.backend("ibm_quebec")  # Using IBM Quebec backend
-
+backend = GenericBackendV2(num_qubits=5)
 # num_qubits = 4
 depth = 3
 # X = np.array([[1, 1, 1,1], [0, 1, 0,0],[0, 1, 1,0], [0, 0, 0,0], [0, 0, 1,0]])
@@ -63,7 +64,7 @@ ansatz = EntanglingLayerAnsatz(num_qubits, depth, entangling_layer_builder,use_r
 
 options = {
     'maxiter': 10,   # Maximum number of iterations
-    'tol': 1e-6,      # Tolerance for termination
+    'tol': 1e-3,      # Tolerance for termination
     'disp': True      # Display convergence messages
 }
 #Powell
@@ -90,7 +91,7 @@ for i in range(0,20):
         # qcbm.load_params(f'hw_param_train_10_qubits_3_layer_linear_{i}.json')
         result,loss_values = qcbm.train_on_batch(X, Y, sampler, backend, n_epochs)
         num_samples = 1000
-        unique_samples, probabilities = qcbm.generate(num_samples, sampler, backend)
+        samples,unique_samples, probabilities = qcbm.generate(num_samples, sampler, backend)
         j = i+1
         qcbm.save_params(f"hw_param_train_10_qubits_3_layer_linear_{j}.json")
         for sample, prob in zip(unique_samples, probabilities):
