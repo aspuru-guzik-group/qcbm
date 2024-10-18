@@ -8,7 +8,7 @@ from qcbm.circuit import LineEntanglingLayerBuilder,EntanglingLayerAnsatz
 from qcbm.qcbm_ibm import SingleBasisQCBM
 from qcbm.loss import ExactNLLTorch
 from qcbm.optimizer import ScipyOptimizer
-from qiskit_ibm_runtime import QiskitRuntimeService, Session, Sampler
+from qiskit_ibm_runtime import QiskitRuntimeService, Session, SamplerV2 as Sampler,  Batch
 import numpy as np
 from itertools import combinations
 import random
@@ -72,7 +72,7 @@ optimizer = ScipyOptimizer(method='COBYLA', options=options)
 qcbm = SingleBasisQCBM(ansatz, optimizer,distance_measure=ExactNLLTorch())
 
 
-qcbm.load_params('hw_param_train_10_qubits_3_layer_linear_0.json')
+# qcbm.load_params('hw_param_train_10_qubits_3_layer_linear_0.json')
 # trained_param = qcbm.params.copy()
 # qcbm = SingleBasisQCBM(ansatz, optimizer,distance_measure=ExactNLLTorch(),param_initializer=trained_param)
 
@@ -83,11 +83,11 @@ ansatz.draw_circuit()
 # %%
 
 # Start a session
-for i in range(9,20):
+for i in range(0,20):
     n_epochs = 5
-    with Session(service=service, backend=backend) as session:
-        sampler = Sampler(session=session)
-        qcbm.load_params(f'hw_param_train_10_qubits_3_layer_linear_{i}.json')
+    with Batch(service=service, backend=backend) as batch:
+        sampler = Sampler(mode=batch)
+        # qcbm.load_params(f'hw_param_train_10_qubits_3_layer_linear_{i}.json')
         result,loss_values = qcbm.train_on_batch(X, Y, sampler, backend, n_epochs)
         num_samples = 1000
         unique_samples, probabilities = qcbm.generate(num_samples, sampler, backend)

@@ -26,7 +26,7 @@ class SingleBasisQCBM:
     def _get_model_object(self, parameters, sampler, backend):
         qc = self.ansatz.get_executable_circuit(parameters)
         qc_transpiled = transpile(qc, backend)
-        job = sampler.run(circuits=[qc_transpiled])
+        job = sampler.run([qc_transpiled])
         result = job.result()
         quasi_dist = result.quasi_dists[0]
         counts = quasi_dist.binary_probabilities()
@@ -38,7 +38,7 @@ class SingleBasisQCBM:
         def generator(n_samples, parameters):
             qc = self.ansatz.get_executable_circuit(parameters)
             qc_transpiled = transpile(qc, backend)
-            job = sampler.run(circuits=[qc_transpiled])
+            job = sampler.run([qc_transpiled])
             result = job.result()
             quasi_dist = result.quasi_dists[0]
             counts = quasi_dist.binary_probabilities()
